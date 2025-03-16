@@ -45,7 +45,7 @@ async function fetchForMonth(year, month) {
   }
 }
 
-let year = 2025;
+let year = 2024;
 for (let month = 1; month < 12; month ++) {
   fetchForMonth(year, month);
 }

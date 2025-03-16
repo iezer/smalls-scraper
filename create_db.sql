@@ -11,7 +11,8 @@ id SERIAL PRIMARY KEY,
 name VARCHAR(255) NOT NULL,
 url VARCHAR(255) NOT NULL UNIQUE,
 instrument VARCHAR(255),
-image VARCHAR(255)
+image VARCHAR(255),
+bio TEXT
 );
 
 CREATE TABLE event_artists (

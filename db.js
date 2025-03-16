@@ -4,7 +4,6 @@ const path = require('path');
 
 // Configure your PostgreSQL connection
 const pool = new Pool({
-  
   ssl: {
     rejectUnauthorized: false,
   },
@@ -33,7 +32,7 @@ VALUES ($1, $2, $3::date, $4)
 RETURNING id;
 `;
 const eventResult = await client.query(eventInsert, [
-eventData.title,
+eventData.title.trim(),
 eventData.url,
 formattedDate, // Now using the formatted date
 eventData.img || null,
@@ -42,8 +41,6 @@ const eventId = eventResult.rows[0].id;
 
 // 2. Process each artist
 for (const artist of eventData.artists) {
-// Parse name and instrument from combined string
-const [name, instrument] = artist.name.split(" / ").map((s) => s.trim());
 
 // Try to insert artist if they don't exist
 const artistInsert = `
@@ -55,9 +52,9 @@ instrument = EXCLUDED.instrument
 RETURNING id;
 `;
 const artistResult = await client.query(artistInsert, [
-name,
+artist.name,
 artist.url,
-instrument || "Unknown",
+artist.instrument || "Unknown",
 ]);
 const artistId = artistResult.rows[0].id;
 
@@ -110,6 +107,9 @@ async function parseJsonFilesInFolder(folderPath) {
     const files = await fs.promises.readdir(folderPath);
 
     for (const file of files) {
+      if(!file.includes('2024')) {
+        continue;
+      }
       const filePath = path.join(folderPath, file);
       const fileContent = await fs.promises.readFile(filePath, 'utf-8');
       
@@ -134,19 +134,18 @@ async function parseJsonFilesInFolder(folderPath) {
   }
 }
 
-//parseJsonFilesInFolder('files');
 
 async function getCount() {
   const client = await pool.connect();
-
-  client.query('SELECT count(*) FROM events', (err, res) => {
-    console.log(err, res);
-    client.end();
-  });
-
+  const results = await client.query('SELECT * FROM events limit 5;');
+  client.release()
+  console.log(results.rows);
+  return results.rows;
 }
 
-getCount();
+parseJsonFilesInFolder('files');
+
+//getCount();
 
 // // Call the function
 // insertEventData(eventData)
@@ -157,3 +156,40 @@ getCount();
 process.on('exit', () => {
   pool.end();
 });
+
+
+// artists by num events
+// SELECT 
+//   a.id,
+//   a.name,
+//   COUNT(ea.event_id) AS event_count
+// FROM 
+//   artists a
+// JOIN 
+//   event_artists ea ON a.id = ea.artist_id
+// GROUP BY 
+//   a.id, a.name
+// ORDER BY 
+//   event_count DESC
+// LIMIT 10;
+
+
+SELECT 
+  a.id,
+  a.name,
+  a.instrument,
+  a.url,
+  a.image,
+  ARRAY_AGG(ea1.event_id) AS events,
+  COUNT(DISTINCT ea2.artist_id) AS other_artists_count,
+  COUNT(ea1.event_id) AS event_count,
+FROM 
+  artists a
+JOIN 
+  event_artists ea1 ON a.id = ea1.artist_id
+JOIN 
+  event_artists ea2 ON ea1.event_id = ea2.event_id AND ea1.artist_id != ea2.artist_id
+GROUP BY 
+  a.id, a.name
+ORDER BY 
+  other_artists_count DESC;
