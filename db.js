@@ -107,9 +107,9 @@ async function parseJsonFilesInFolder(folderPath) {
     const files = await fs.promises.readdir(folderPath);
 
     for (const file of files) {
-      if(!file.includes('2024')) {
-        continue;
-      }
+      // if(!file.includes('2024')) {
+      //   continue;
+      // }
       const filePath = path.join(folderPath, file);
       const fileContent = await fs.promises.readFile(filePath, 'utf-8');
       
@@ -174,22 +174,22 @@ process.on('exit', () => {
 // LIMIT 10;
 
 
-SELECT 
-  a.id,
-  a.name,
-  a.instrument,
-  a.url,
-  a.image,
-  ARRAY_AGG(ea1.event_id) AS events,
-  COUNT(DISTINCT ea2.artist_id) AS other_artists_count,
-  COUNT(ea1.event_id) AS event_count,
-FROM 
-  artists a
-JOIN 
-  event_artists ea1 ON a.id = ea1.artist_id
-JOIN 
-  event_artists ea2 ON ea1.event_id = ea2.event_id AND ea1.artist_id != ea2.artist_id
-GROUP BY 
-  a.id, a.name
-ORDER BY 
-  other_artists_count DESC;
+// SELECT 
+//   a.id,
+//   a.name,
+//   a.instrument,
+//   a.url,
+//   a.image,
+//   ARRAY_AGG(ea1.event_id) AS events,
+//   COUNT(DISTINCT ea2.artist_id) AS other_artists_count,
+//   COUNT(ea1.event_id) AS event_count,
+// FROM 
+//   artists a
+// JOIN 
+//   event_artists ea1 ON a.id = ea1.artist_id
+// JOIN 
+//   event_artists ea2 ON ea1.event_id = ea2.event_id AND ea1.artist_id != ea2.artist_id
+// GROUP BY 
+//   a.id, a.name
+// ORDER BY 
+//   other_artists_count DESC;

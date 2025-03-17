@@ -58,19 +58,16 @@ GROUP BY
   a.id, a.name
 ORDER BY 
 event_count DESC
-LIMIT 100;`;
+LIMIT 10;`;
 
 const EVENTS_FOR_ARTISTS_QUERTY = `
 SELECT
-  e.*,
-  ARRAY_AGG(ea.artist_id) AS artists
+  e.*
   FROM 
   events e
-LEFT JOIN 
-  event_artists ea ON e.id = ea.event_id
-  WHERE e.id = ANY($1)
-  GROUP BY 
-  e.id; `;
+  WHERE e.id = ANY($1)`;
+
+  const regex = /^\/artists\/\d+$/;
 
 export const handler = async(event) => {
   console.log(event);
@@ -88,6 +85,15 @@ export const handler = async(event) => {
     const artists = artistsResults.rows;
     
     response = { events, artists };
+    } else if (event.rawPath.includes('artists') && regex.test(event.rawPath)) {
+      const artistId = event.rawPath.split('/').pop();
+      const artistResults = await client.query(`SELECT * FROM artists WHERE id = ${artistId}`);
+      const artists = artistResults.rows;
+
+      const eventsResults = await client.query(`SELECT e.* FROM events e JOIN event_artists ea ON e.id = ea.event_id WHERE ea.artist_id = ${artistId}`);
+      const events = eventsResults.rows;
+
+      response = { artists, events };
     } else if (event.rawPath.includes('artists')) {
       const artistsResults = await client.query(TOP_ARTISTS_QUERY);
       const artists = artistsResults.rows;

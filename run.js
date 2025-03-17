@@ -45,8 +45,12 @@ async function fetchForMonth(year, month) {
   }
 }
 
-let year = 2024;
-for (let month = 1; month < 12; month ++) {
-  fetchForMonth(year, month);
+async function getAllYears() {
+  for (let year = 2021; year >= 2007; year--) {
+    for (let month = 0; month < 12; month ++) {
+      await fetchForMonth(year, month);
+    }
+  }
 }
 
+getAllYears();
