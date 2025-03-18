@@ -24,7 +24,7 @@ LEFT JOIN
   WHERE EXTRACT(YEAR FROM date) = $1 AND
     EXTRACT(MONTH FROM date) = $2
 GROUP BY 
-  e.id; `;
+  e.id;`;
 
 const ARTISTS_QUERY = `SELECT 
   a.*
@@ -67,7 +67,7 @@ SELECT
   events e
   WHERE e.id = ANY($1)`;
 
-  const regex = /^\/artists\/\d+$/;
+  const regex = /artists\/\d+$/;
 
 export const handler = async(event) => {
   console.log(event);
@@ -85,15 +85,34 @@ export const handler = async(event) => {
     const artists = artistsResults.rows;
     
     response = { events, artists };
-    } else if (event.rawPath.includes('artists') && regex.test(event.rawPath)) {
+    } else if (regex.test(event.rawPath)) {
       const artistId = event.rawPath.split('/').pop();
-      const artistResults = await client.query(`SELECT * FROM artists WHERE id = ${artistId}`);
+      const artistResults = await client.query(`SELECT 
+      a.*,
+      ARRAY_AGG(DISTINCT ea2.event_id) AS events
+    FROM 
+      artists a
+    JOIN 
+      event_artists ea1 ON a.id = ea1.artist_id
+    JOIN 
+      event_artists ea2 ON ea1.event_id = ea2.event_id
+    WHERE 
+      ea2.artist_id = $1 GROUP BY a.id`, [artistId]);
       const artists = artistResults.rows;
 
-      const eventsResults = await client.query(`SELECT e.* FROM events e JOIN event_artists ea ON e.id = ea.event_id WHERE ea.artist_id = ${artistId}`);
+      const artist = artists.find(artist => artist.id == artistId);
+
+      const eventsResults = await client.query(`SELECT 
+      e.*,
+      ARRAY_AGG(ea2.artist_id) AS artists
+      FROM events e 
+      JOIN event_artists ea1 ON e.id = ea1.event_id
+      JOIN event_artists ea2 ON ea1.event_id = ea2.event_id
+      WHERE ea1.artist_id = ${artistId}
+      GROUP BY e.id`);
       const events = eventsResults.rows;
 
-      response = { artists, events };
+      response = { events, artist, artists };
     } else if (event.rawPath.includes('artists')) {
       const artistsResults = await client.query(TOP_ARTISTS_QUERY);
       const artists = artistsResults.rows;
