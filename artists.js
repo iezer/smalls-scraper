@@ -98,7 +98,7 @@ async function fetchAndSaveArtistData() {
 async function fetchArtists() {
   // Call the function
 
-  for (let i = 0; i < 760; i++) {
+  for (let i = 0; i < 2522; i++) {
     await fetchAndSaveArtistData();
   }
 }
